@@ -126,7 +126,6 @@ export async function POST(req: Request) {
 			}
 		}
 
-		// Tozalash
 		const cleanText = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ')
 
 		// Extract function
@@ -138,7 +137,7 @@ export async function POST(req: Request) {
 			return null
 		}
 
-		// Payment system aniq
+		// Payment system
 		const paymentMatch = cleanText.match(/to['‘`]?lov.*?(Ha|Yo‘q|Yo'q)/i)
 		const payment_system = paymentMatch
 			? /^Ha$/i.test(paymentMatch[1].trim())

@@ -1,8 +1,6 @@
-// components/FileTypeIcon.tsx
 import { getFileInfo } from '@/lib/file-info'
 import React, { JSX } from 'react'
 
-// React Icons kutubxonasidan keraklilar
 import {
 	FaFilePdf,
 	FaFileWord,
