@@ -111,31 +111,31 @@ export default function Page() {
 	}
 
 	return (
-		<div className='min-h-screen w-full bg-linear-to-br from-slate-100 to-slate-200 p-6 md:p-10'>
-			<header className='mb-10 bg-white p-10 rounded-2xl shadow-lg'>
+		<div className='min-h-screen h-full w-full xl:bg-linear-to-br from-slate-100 to-slate-200 p-3 md:p-8'>
+			<header className='md:mb-10 bg-white xl:p-10 p-4 rounded-2xl xl:shadow-lg'>
 				<motion.h1
 					initial={{ opacity: 0, y: -20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.5 }}
-					className='text-4xl md:text-5xl font-bold bg-linear-to-r from-indigo-600 to-emerald-600 text-transparent bg-clip-text'
+					className='2xl:text-3xl text-2xl font-bold bg-linear-to-r from-indigo-600 to-emerald-600 text-transparent bg-clip-text'
 				>
 					Ekspertiza tan narxi kalkulyatori
 				</motion.h1>
-				<p className='text-slate-600 mt-2 text-lg'>
+				<p className='text-slate-600 mt-2 2xl:text-base text-sm'>
 					Faylni yuklang va avtomatik hisob-kitobni ko‘ring
 				</p>
 			</header>
 
-			<div className='grid md:grid-cols-4 gap-8 items-stretch h-[calc(100vh-270px)]'>
+			<div className='grid md:grid-cols-5 grid-cols-1 xl:gap-8 gap-3 items-stretch min-h-[calc(100vh-270px)]'>
 				<motion.div
 					initial={{ opacity: 0, x: -30 }}
 					animate={{ opacity: 1, x: 0 }}
 					transition={{ delay: 0.2 }}
-					className='md:col-span-1 flex'
+					className='md:col-span-2 flex'
 				>
-					<Card className='flex flex-col flex-1 shadow-lg rounded-2xl border border-slate-200'>
+					<Card className='flex flex-col flex-1 xl:shadow-lg rounded-2xl border-none shadow-none xl:border xl:border-slate-200'>
 						<CardHeader>
-							<CardTitle className='text-2xl font-semibold text-slate-700'>
+							<CardTitle className='md:text-2xl text-xl font-semibold text-slate-700'>
 								Faylni yuklash
 							</CardTitle>
 						</CardHeader>
@@ -146,20 +146,28 @@ export default function Page() {
 									onDragOver={handleDrag}
 									onDragLeave={handleDrag}
 									onDrop={handleDrop}
-									className={`border-2 border-dashed rounded-xl p-10 transition ${
+									className={`border-2 border-dashed rounded-xl p-6 transition ${
 										dragActive
 											? 'border-blue-500 bg-blue-50'
 											: 'border-gray-300'
 									}`}
 								>
 									{file ? (
-										<p className='text-gray-700 flex items-center gap-1'>
-											<FileTypeIcon fileName={file.name} className='text-xl' />
-											<b>{file.name}</b> ({(file.size / 1024).toFixed(2)} KB)
+										<p className='flex items-center gap-2 text-gray-700 text-sm md:text-base xl:text-lg break-all'>
+											<FileTypeIcon
+												fileName={file.name}
+												className='text-sm md:text-base xl:text-xl shrink-0'
+											/>
+											<b className='truncate max-w-[60%] md:max-w-[70%]'>
+												{file.name}
+											</b>
+											<span className='whitespace-nowrap'>
+												({(file.size / 1024).toFixed(2)} KB)
+											</span>
 											<X
-												size={16}
+												size={18}
 												color='red'
-												className='cursor-pointer'
+												className='cursor-pointer shrink-0 hover:scale-110 transition-transform'
 												onClick={() => {
 													setFile(null)
 													setResultData({})
@@ -168,14 +176,16 @@ export default function Page() {
 											/>
 										</p>
 									) : (
-										<p className='text-gray-500 flex items-center'>
-											<Download size={18} className='mr-2' /> Faylni bu yerga
-											tashlang yoki
+										<p className='flex flex-wrap items-center text-gray-500 text-sm md:text-base'>
+											<Download size={20} className='mr-2 shrink-0' />
+											<span className='break-words'>
+												Faylni bu yerga tashlang yoki
+											</span>
 											<label className='text-blue-600 cursor-pointer ml-1 underline'>
 												bosib tanlang
 												<input
 													type='file'
-													accept='.pdf,.docx,doc,.txt,.pptx,.xlsx,.xls,.rtf,.jpg,.png,.rtf'
+													accept='.pdf,.docx,.doc,.txt,.pptx,.xlsx,.xls,.rtf,.jpg,.png'
 													onChange={handleChange}
 													className='hidden'
 												/>
@@ -288,7 +298,7 @@ export default function Page() {
 					transition={{ delay: 0.4 }}
 					className='md:col-span-3 flex'
 				>
-					<Card className='flex flex-col flex-1 shadow-lg rounded-2xl border border-slate-200 bg-white/90 overflow-auto'>
+					<Card className='flex flex-col flex-1 xl:shadow-lg rounded-2xl shadow-none border-none xl:border border-slate-200 bg-white/90 overflow-auto'>
 						<CardHeader>
 							<CardTitle className='text-2xl font-semibold text-slate-700'>
 								Natijalar
