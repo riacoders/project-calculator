@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import { useState, DragEvent, ChangeEvent, useRef } from 'react'
-import { ImageDown, Loader2, Pencil, X } from 'lucide-react'
+import { Download, Eye, ImageDown, Loader2, Pencil, X } from 'lucide-react'
 import {
 	Accordion,
 	AccordionContent,
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/accordion'
 import { toPng } from 'html-to-image'
 import FileTypeIcon from './_components/filetype-icon'
+import { FilePreview } from './_components/file-preview'
 
 export default function Page() {
 	const [file, setFile] = useState<File | null>(null)
@@ -105,8 +106,23 @@ export default function Page() {
 		setEditMode(prev => ({ ...prev, [key]: !prev[key] }))
 	}
 
-	const handleValueChange = (key: string, value: string) => {
+	const handleValueChange = (key: string, value: string | boolean) => {
 		setResultData(prev => ({ ...prev, [key]: value }))
+		console.log(resultData)
+	}
+
+	const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+	const [fileUrl, setFileUrl] = useState<string | null>(null)
+
+	const handlePreview = () => {
+		const blobUrl = URL.createObjectURL(file!)
+		setFileUrl(blobUrl)
+		setIsPreviewOpen(true)
+	}
+
+	const handleClosePreview = () => {
+		if (fileUrl) URL.revokeObjectURL(fileUrl)
+		setIsPreviewOpen(false)
 	}
 
 	return (
@@ -162,17 +178,25 @@ export default function Page() {
 												onClick={() => {
 													setFile(null)
 													setResultData({})
+													setUploading(false)
 												}}
+											/>
+											<Eye
+												size={16}
+												color='blue'
+												className='cursor-pointer'
+												onClick={handlePreview}
 											/>
 										</p>
 									) : (
-										<p className='text-gray-500'>
-											Faylni bu yerga tashlang yoki
+										<p className='text-gray-500 flex items-center'>
+											<Download size={18} className='mr-2' /> Faylni bu yerga
+											tashlang yoki
 											<label className='text-blue-600 cursor-pointer ml-1 underline'>
 												bosib tanlang
 												<input
 													type='file'
-													accept='.pdf,.docx,.txt,.pptx,.xlsx'
+													accept='.pdf,.docx,doc,.txt,.pptx,.xlsx,.xls,.rtf,.jpg,.png,.rtf'
 													onChange={handleChange}
 													className='hidden'
 												/>
@@ -182,40 +206,79 @@ export default function Page() {
 								</div>
 								{resultData && Object.keys(resultData).length > 0 && (
 									<div className='grid md:grid-cols-2 gap-5 mt-5'>
-										{Object.entries(resultData).map(([key, value]) => (
-											<div key={key} className='space-y-1'>
-												<label className='text-sm text-slate-600 capitalize'>
-													{key.replace(/_/g, ' ')}
-												</label>
-												<div className='relative flex items-center'>
-													<Input
-														value={value as string}
-														readOnly={!editMode[key]}
-														onChange={e =>
-															handleValueChange(key, e.target.value)
-														}
-														className={`pr-6 ${
-															editMode[key]
-																? 'bg-white border-emerald-400'
-																: 'bg-slate-100 cursor-default'
-														}`}
-													/>
-													<Button
-														size='icon'
-														className='absolute right-1 top-0 flex items-center bg-transparent hover:bg-transparent cursor-pointer'
-														onClick={() => handleEditToggle(key)}
-													>
-														<Pencil
-															className={`h-2 w-2 ${
-																editMode[key]
-																	? 'text-emerald-600'
-																	: 'text-slate-400'
-															}`}
-														/>
-													</Button>
+										{Object.entries(resultData).map(([key, value]) => {
+											const isBooleanField =
+												typeof value === 'boolean' ||
+												value === 'Ha' ||
+												value === 'Yo‘q' ||
+												value === 'Yo‘q'
+
+											return (
+												<div key={key} className='space-y-1'>
+													<label className='text-sm text-slate-600 capitalize'>
+														{key.replace(/_/g, ' ')}
+													</label>
+
+													<div className='relative flex items-center'>
+														{editMode[key] ? (
+															isBooleanField ? (
+																<select
+																	value={
+																		value === true || value === 'Ha'
+																			? 'true'
+																			: 'false'
+																	}
+																	onChange={e =>
+																		handleValueChange(
+																			key,
+																			e.target.value === 'true'
+																		)
+																	}
+																	className='w-full rounded-md border border-emerald-400 bg-white p-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500'
+																>
+																	<option value='true'>Ha</option>
+																	<option value='false'>Yo‘q</option>
+																</select>
+															) : (
+																<Input
+																	value={value ?? ''}
+																	onChange={e =>
+																		handleValueChange(key, e.target.value)
+																	}
+																	className='pr-6 bg-white border-emerald-400'
+																/>
+															)
+														) : (
+															<Input
+																value={
+																	isBooleanField
+																		? value === true || value === 'Ha'
+																			? 'Ha'
+																			: 'Yo‘q'
+																		: value ?? ''
+																}
+																readOnly
+																className='pr-6 bg-slate-100 cursor-default'
+															/>
+														)}
+
+														<Button
+															size='icon'
+															className='absolute right-1 top-0 flex items-center bg-transparent hover:bg-transparent cursor-pointer'
+															onClick={() => handleEditToggle(key)}
+														>
+															<Pencil
+																className={`h-2 w-2 ${
+																	editMode[key]
+																		? 'text-emerald-600'
+																		: 'text-slate-400'
+																}`}
+															/>
+														</Button>
+													</div>
 												</div>
-											</div>
-										))}
+											)
+										})}
 									</div>
 								)}
 
@@ -268,8 +331,9 @@ export default function Page() {
 										const internetAccess = resultData.internet_resursiga_ruxsat
 											? 1.05
 											: 1
-										const paymentIntegration =
-											resultData.payment_system === 'Yo‘q' ? 1 : 1.1
+										const paymentIntegration = resultData.payment_system
+											? 1.1
+											: 1
 
 										const Isoat = 197690
 
@@ -391,6 +455,21 @@ export default function Page() {
 					</Card>
 				</motion.div>
 			</div>
+			{isPreviewOpen && (
+				<div className='w-screen h-screen fixed top-0 left-0 z-50'>
+					<div className='mt-10 mx-auto w-4xl h-4/5 p-5 rounded-md overflow-hidden bg-white relative shadow-lg'>
+						<span className='w-8 h-8 rounded-md bg-white absolute top-1 right-1 flex items-center justify-center shadow-lg cursor-pointer text-red-500'>
+							<X
+								size={16}
+								onClick={() => {
+									setIsPreviewOpen(false)
+								}}
+							/>
+						</span>
+						<FilePreview file={file} fileUrl={fileUrl} />
+					</div>
+				</div>
+			)}
 		</div>
 	)
 }

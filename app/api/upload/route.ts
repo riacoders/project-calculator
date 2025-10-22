@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import * as mammoth from 'mammoth'
 import * as xlsx from 'xlsx'
 import JSZip from 'jszip'
-import Tesseract from 'tesseract.js'
 import { parse as csvParse } from 'csv-parse/sync'
 import PDFParser from 'pdf2json'
 
@@ -13,17 +12,15 @@ export async function POST(req: Request) {
 		const formData = await req.formData()
 		const file = formData.get('file') as File
 
-		if (!file) {
+		if (!file)
 			return NextResponse.json({ error: 'Fayl topilmadi' }, { status: 400 })
-		}
 
 		const buffer = Buffer.from(await file.arrayBuffer())
 		const mimeType = file.type
 		const fileName = file.name.toLowerCase()
-
 		let text = ''
 
-		// DOCX
+		// ==== DOCX ====
 		if (
 			mimeType.includes('wordprocessingml') ||
 			fileName.endsWith('.docx') ||
@@ -33,15 +30,15 @@ export async function POST(req: Request) {
 			text = value
 		}
 
-		// PDF (pdf2json orqali)
+		// ==== PDF ====
 		else if (mimeType === 'application/pdf' || fileName.endsWith('.pdf')) {
 			const pdfParser = new PDFParser()
 			text = await new Promise((resolve, reject) => {
-				pdfParser.on('pdfParser_dataError', (errData: any) =>
-					reject(errData.parserError)
+				pdfParser.on('pdfParser_dataError', (err: any) =>
+					reject(err.parserError)
 				)
 				pdfParser.on('pdfParser_dataReady', (pdfData: any) => {
-					const pages = pdfData.formImage.Pages
+					const pages = pdfData.Pages
 					const allTexts: string[] = []
 					for (const page of pages) {
 						for (const textObj of page.Texts) {
@@ -56,7 +53,7 @@ export async function POST(req: Request) {
 			})
 		}
 
-		// EXCEL
+		// ==== EXCEL ====
 		else if (
 			mimeType.includes('spreadsheetml') ||
 			fileName.endsWith('.xlsx') ||
@@ -68,7 +65,7 @@ export async function POST(req: Request) {
 			).join('\n')
 		}
 
-		// POWERPOINT
+		// ==== POWERPOINT ====
 		else if (
 			mimeType.includes('presentationml') ||
 			fileName.endsWith('.pptx')
@@ -79,17 +76,16 @@ export async function POST(req: Request) {
 				if (path.startsWith('ppt/slides/slide')) {
 					const xml = await zip.files[path].async('string')
 					const matches = xml.match(/<a:t>(.*?)<\/a:t>/g)
-					if (matches) {
+					if (matches)
 						slideTexts.push(
 							matches.map(t => t.replace(/<\/?a:t>/g, '')).join(' ')
 						)
-					}
 				}
 			}
 			text = slideTexts.join('\n')
 		}
 
-		// TEXT / CSV
+		// ==== TEXT / CSV ====
 		else if (
 			mimeType.startsWith('text/') ||
 			fileName.endsWith('.txt') ||
@@ -97,46 +93,70 @@ export async function POST(req: Request) {
 			fileName.endsWith('.rtf')
 		) {
 			const str = buffer.toString('utf-8')
-
 			if (fileName.endsWith('.csv')) {
 				const records = csvParse(str, {
 					columns: false,
 					skip_empty_lines: true,
 				})
-				text = records.map((r: string[]) => r.join(', ')).join('\n')
+				text = records.map((r: string[]) => r.join(', ')).join(' ')
 			} else {
-				text = str
+				text = str.replace(/\n/g, ' ')
 			}
 		}
 
-		// IMAGE → OCR
+		// ==== IMAGE (OCR via external API) ====
 		else if (mimeType.startsWith('image/')) {
-			const result = await Tesseract.recognize(buffer, 'eng+uzb')
-			text = result.data.text
-		} else {
-			return NextResponse.json(
-				{ error: `Qo'llab-quvvatlanmagan fayl turi: ${mimeType}` },
-				{ status: 400 }
-			)
+			try {
+				const form = new FormData()
+				form.append('file', new Blob([buffer]), fileName)
+
+				const response = await fetch('https://ocr-file.iservices.uz/ocr', {
+					method: 'POST',
+					body: form,
+				})
+				const data = await response.json()
+				if (!data.success) throw new Error('OCR API xato berdi')
+				text = data.text
+			} catch (err: any) {
+				console.error('OCR xato:', err)
+				return NextResponse.json(
+					{ error: `Rasmni o‘qishda xato: ${err.message}` },
+					{ status: 500 }
+				)
+			}
 		}
 
-		// Matndan qiymatlar ajratish
-		const extractValue = (pattern: RegExp) => {
-			const match = text.match(pattern)
-			return match ? match[1].trim() : null
+		// Tozalash
+		const cleanText = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ')
+
+		// Extract function
+		const extractValue = (patterns: RegExp[]): string | null => {
+			for (const pattern of patterns) {
+				const match = cleanText.match(pattern)
+				if (match) return match[1].trim()
+			}
+			return null
 		}
 
+		// Payment system aniq
+		const paymentMatch = cleanText.match(/to['‘`]?lov.*?(Ha|Yo‘q|Yo'q)/i)
+		const payment_system = paymentMatch
+			? /^Ha$/i.test(paymentMatch[1].trim())
+			: false
+
+		// Values
 		const values = {
-			manba_kodining_hajmi_mb: extractValue(/manba.*?(\d+)\s*MB/i),
-			aborot_tizimi_modullari_soni: extractValue(/modullar.*?(\d+)/i),
-			rollar_soni: extractValue(/rollar.*?(\d+)/i),
-			axborot_tizimi_baza_hajmi_mb: extractValue(/baza.*?(\d+)\s*MB/i),
-			jadvallar_soni: extractValue(/jadvallar.*?(\d+)/i),
-			integratsiyalar_soni: extractValue(/integatsiya.*?(\d+)/i),
-			internet_resursiga_ruxsat: /Internet\s*tarmog/i.test(text),
-			payment_system: /to['‘`]?lov\s+tizimi.*(Ha|Yo‘q|Yo'q)/i.test(text)
-				? text.match(/to['‘`]?lov\s+tizimi.*(Ha|Yo‘q|Yo'q)/i)?.[1]
-				: null,
+			manba_kodining_hajmi_mb: extractValue([/manba.*?hajmi.*?(\d+)\s*MB/i]),
+			aborot_tizimi_modullari_soni: extractValue([
+				/modullari.*?(\d+)\s*ta/i,
+				/modullar.*?soni.*?(\d+)\s*ta/i,
+			]),
+			rollar_soni: extractValue([/rollar.*?soni.*?(\d+)\s*ta/i]),
+			axborot_tizimi_baza_hajmi_mb: extractValue([/baza.*?(\d+)\s*MB/i]),
+			jadvallar_soni: extractValue([/jadvallar.*?soni.*?(\d+)\s*ta/i]),
+			integratsiyalar_soni: extractValue([/integatsiya.*?(\d+)\s*ta/i]),
+			internet_resursiga_ruxsat: /internet.*?ruxsat/i.test(cleanText),
+			payment_system,
 		}
 
 		return NextResponse.json({
