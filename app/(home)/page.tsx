@@ -119,7 +119,7 @@ export default function Page() {
 					transition={{ duration: 0.5 }}
 					className='2xl:text-3xl text-2xl font-bold bg-linear-to-r from-indigo-600 to-emerald-600 text-transparent bg-clip-text'
 				>
-					Ekspertiza tan narxi kalkulyatori
+					Ekspertiza narxi kalkulyatori
 				</motion.h1>
 				<p className='text-slate-600 mt-2 2xl:text-base text-sm'>
 					Faylni yuklang va avtomatik hisob-kitobni ko‘ring
