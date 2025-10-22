@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import { useState, DragEvent, ChangeEvent, useRef } from 'react'
-import { Download, Eye, ImageDown, Loader2, Pencil, X } from 'lucide-react'
+import { Download, ImageDown, Loader2, Pencil, X } from 'lucide-react'
 import {
 	Accordion,
 	AccordionContent,
@@ -14,7 +14,6 @@ import {
 } from '@/components/ui/accordion'
 import { toPng } from 'html-to-image'
 import FileTypeIcon from './_components/filetype-icon'
-import { FilePreview } from './_components/file-preview'
 
 export default function Page() {
 	const [file, setFile] = useState<File | null>(null)
@@ -111,20 +110,6 @@ export default function Page() {
 		console.log(resultData)
 	}
 
-	const [isPreviewOpen, setIsPreviewOpen] = useState(false)
-	const [fileUrl, setFileUrl] = useState<string | null>(null)
-
-	const handlePreview = () => {
-		const blobUrl = URL.createObjectURL(file!)
-		setFileUrl(blobUrl)
-		setIsPreviewOpen(true)
-	}
-
-	const handleClosePreview = () => {
-		if (fileUrl) URL.revokeObjectURL(fileUrl)
-		setIsPreviewOpen(false)
-	}
-
 	return (
 		<div className='min-h-screen w-full bg-linear-to-br from-slate-100 to-slate-200 p-6 md:p-10'>
 			<header className='mb-10 bg-white p-10 rounded-2xl shadow-lg'>
@@ -180,12 +165,6 @@ export default function Page() {
 													setResultData({})
 													setUploading(false)
 												}}
-											/>
-											<Eye
-												size={16}
-												color='blue'
-												className='cursor-pointer'
-												onClick={handlePreview}
 											/>
 										</p>
 									) : (
@@ -455,21 +434,6 @@ export default function Page() {
 					</Card>
 				</motion.div>
 			</div>
-			{isPreviewOpen && (
-				<div className='w-screen h-screen fixed top-0 left-0 z-50'>
-					<div className='mt-10 mx-auto w-4xl h-4/5 p-5 rounded-md overflow-hidden bg-white relative shadow-lg'>
-						<span className='w-8 h-8 rounded-md bg-white absolute top-1 right-1 flex items-center justify-center shadow-lg cursor-pointer text-red-500'>
-							<X
-								size={16}
-								onClick={() => {
-									setIsPreviewOpen(false)
-								}}
-							/>
-						</span>
-						<FilePreview file={file} fileUrl={fileUrl} />
-					</div>
-				</div>
-			)}
 		</div>
 	)
 }
