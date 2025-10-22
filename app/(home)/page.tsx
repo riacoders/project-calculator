@@ -122,7 +122,7 @@ export default function Page() {
 					Ekspertiza narxi kalkulyatori
 				</motion.h1>
 				<p className='text-slate-600 mt-2 2xl:text-base text-sm'>
-					Faylni yuklang va avtomatik hisob-kitobni ko‘ring
+					Natijani olish uchun faylni yuklang
 				</p>
 			</header>
 
