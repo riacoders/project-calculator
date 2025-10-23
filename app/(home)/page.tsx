@@ -232,7 +232,7 @@ export default function Page() {
 
 	return (
 		<div className='min-h-screen h-full w-full xl:bg-linear-to-br from-slate-100 to-slate-200 p-3 md:p-8'>
-			<header className='md:mb-10 bg-white xl:p-10 p-4 rounded-2xl xl:shadow-lg'>
+			<header className='md:mb-5 bg-white xl:p-5 p-3 rounded-2xl xl:shadow-lg'>
 				<motion.h1
 					initial={{ opacity: 0, y: -20 }}
 					animate={{ opacity: 1, y: 0 }}
@@ -246,7 +246,7 @@ export default function Page() {
 				</p>
 			</header>
 
-			<div className='grid md:grid-cols-5 grid-cols-1 xl:gap-8 gap-3 items-stretch min-h-[calc(100vh-270px)]'>
+			<div className='grid md:grid-cols-5 grid-cols-1 xl:gap-4 gap-3 items-stretch min-h-[calc(100vh-270px)]'>
 				<motion.div
 					initial={{ opacity: 0, x: -30 }}
 					animate={{ opacity: 1, x: 0 }}
@@ -434,7 +434,7 @@ export default function Page() {
 					initial={{ opacity: 0, x: 30 }}
 					animate={{ opacity: 1, x: 0 }}
 					transition={{ delay: 0.4 }}
-					className='md:col-span-3 flex flex-col gap-10'
+					className='md:col-span-3 flex flex-col gap-4'
 				>
 					<Card className='flex flex-col gap-3 flex-1 xl:shadow-lg rounded-2xl shadow-none border-none xl:border border-slate-200 bg-white/90  max-h-1/2'>
 						<CardHeader>
@@ -442,7 +442,7 @@ export default function Page() {
 								Formulaga ko‘ra hisob
 							</CardTitle>
 						</CardHeader>
-						<CardContent className='flex flex-col gap-6 px-6'>
+						<CardContent className='flex flex-col gap-6 px-6 overflow-y-auto'>
 							{resultData && Object.keys(resultData).length > 0 ? (
 								<>
 									{(() => {
