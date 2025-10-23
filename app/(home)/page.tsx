@@ -246,7 +246,7 @@ export default function Page() {
 				</p>
 			</header>
 
-			<div className='grid md:grid-cols-5 grid-cols-1 xl:gap-4 gap-3 items-stretch min-h-[calc(100vh-270px)]'>
+			<div className='grid md:grid-cols-5 grid-cols-1 xl:gap-4 gap-3 items-stretch min-h-[calc(100vh-200px)]'>
 				<motion.div
 					initial={{ opacity: 0, x: -30 }}
 					animate={{ opacity: 1, x: 0 }}
@@ -577,13 +577,13 @@ export default function Page() {
 							)}
 						</CardContent>
 					</Card>
-					<Card className='flex flex-col flex-1 xl:shadow-lg rounded-2xl shadow-none border-none xl:border border-slate-200 bg-white/90 overflow-auto'>
+					<Card className='flex flex-col flex-1 xl:shadow-lg rounded-2xl gap-3 shadow-none border-none xl:border border-slate-200 bg-white/90 overflow-auto'>
 						<CardHeader>
 							<CardTitle className='text-2xl font-semibold text-slate-700'>
 								Yuklangan fayllar tarixi
 							</CardTitle>
 						</CardHeader>
-						<CardContent className='flex flex-col gap-6 p-6 h-full overflow-y-auto'>
+						<CardContent className='flex flex-col gap-6 py-3 px-6 h-full overflow-y-auto'>
 							{loading ? (
 								<div className='w-full h-full flex items-center justify-center'>
 									<p>Saqlangan fayllar yuklanmoqda...</p>
