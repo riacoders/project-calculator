@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
-import { useState, DragEvent, ChangeEvent, useRef } from 'react'
-import { Download, ImageDown, Loader2, Pencil, X } from 'lucide-react'
+import { useState, DragEvent, ChangeEvent, useRef, useEffect } from 'react'
+import { Download, ImageDown, Loader2, Pencil, Trash2, X } from 'lucide-react'
 import {
 	Accordion,
 	AccordionContent,
@@ -14,6 +14,27 @@ import {
 } from '@/components/ui/accordion'
 import { toPng } from 'html-to-image'
 import FileTypeIcon from './_components/filetype-icon'
+import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+import axios from 'axios'
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from '@/components/ui/table'
+
+interface FileTypes {
+	name: string
+	size: number
+	amount: number
+	_id: string
+	uploadedAt: string
+	createdAt: string
+	updatedAt: string
+}
 
 export default function Page() {
 	const [file, setFile] = useState<File | null>(null)
@@ -25,6 +46,30 @@ export default function Page() {
 	const [resultData, setResultData] = useState<Record<string, any>>({})
 	const [editMode, setEditMode] = useState<Record<string, boolean>>({})
 	const cardRef = useRef<HTMLDivElement>(null)
+	const [saveLoading, setSaveLoading] = useState(false)
+	const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
+	const [loading, setLoading] = useState(false)
+	const [refresh, setRefresh] = useState(false)
+	const [files, setFiles] = useState<FileTypes[]>([])
+	const [calculated, setCalculated] = useState(false)
+
+	useEffect(() => {
+		const fetchData = async () => {
+			setLoading(true)
+			await axios
+				.get('/api/files')
+				.then(res => setFiles(res.data))
+				.catch(err => {
+					toast.error(err?.message || 'Nimadir xato ketdi!', {
+						position: 'top-center',
+						richColors: true,
+					})
+				})
+				.finally(() => setLoading(false))
+		}
+
+		fetchData()
+	}, [refresh])
 
 	const handleDownload = async () => {
 		if (!cardRef.current) return
@@ -91,6 +136,7 @@ export default function Page() {
 			if (!res.ok) throw new Error(data.error || 'Yuklashda xatolik yuz berdi.')
 
 			setResult(data)
+			setCalculated(true)
 			if (data.values) {
 				setResultData(data.values)
 			}
@@ -108,6 +154,80 @@ export default function Page() {
 	const handleValueChange = (key: string, value: string | boolean) => {
 		setResultData(prev => ({ ...prev, [key]: value }))
 		console.log(resultData)
+	}
+
+	const handleSave = async () => {
+		if (!file || !resultData) return
+		setSaveLoading(true)
+
+		try {
+			const MK = Number(resultData.manba_kodining_hajmi_mb) || 0
+			const RS = Number(resultData.rollar_soni) || 0
+			const MS = Number(resultData.aborot_tizimi_modullari_soni) || 0
+			const IS = Number(resultData.integratsiyalar_soni) || 0
+			const MBH = Number(resultData.axborot_tizimi_baza_hajmi_mb) || 0
+			const MBJS = Number(resultData.jadvallar_soni) || 0
+
+			const internetAccess = resultData.internet_resursiga_ruxsat ? 1.05 : 1
+			const paymentIntegration = resultData.payment_system ? 1.1 : 1
+			const Isoat = 197690
+
+			const total =
+				((MK / 30) * 10 +
+					RS * 24 +
+					MS * 48 +
+					IS * 48 +
+					(MBH / 10) * 8 +
+					(MBJS / 2) * 10) *
+				Isoat *
+				internetAccess *
+				paymentIntegration
+
+			const res = await fetch('/api/files', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					name: file.name,
+					size: file.size,
+					amount: total,
+				}),
+			})
+			setRefresh(!refresh)
+			if (!res.ok) throw new Error('Saqlashda xato yuz berdi.')
+			const data = await res.json()
+
+			toast.success(`${data?.name} fayl muvaffaqiyatli saqlandi!`, {
+				position: 'top-center',
+				richColors: true,
+			})
+		} catch (err: any) {
+			toast.error(err?.message || 'Nimadir xato ketdi!', {
+				position: 'top-center',
+				richColors: true,
+			})
+		} finally {
+			setSaveLoading(false)
+		}
+	}
+
+	const handleDelete = async (id: string) => {
+		setDeleteLoading(id)
+		await axios
+			.delete(`/api/files/${id}`)
+			.then(() => {
+				toast.info(`Fayl muvaffaqiyatli o'chirildi!`, {
+					position: 'top-center',
+					richColors: true,
+				})
+				setRefresh(!refresh)
+			})
+			.catch(err => {
+				toast.error(err?.message || 'Nimadir xato ketdi!', {
+					position: 'top-center',
+					richColors: true,
+				})
+			})
+			.finally(() => setDeleteLoading(null))
 	}
 
 	return (
@@ -139,7 +259,7 @@ export default function Page() {
 								Faylni yuklash
 							</CardTitle>
 						</CardHeader>
-						<CardContent className='flex-1 flex items-center justify-center h-full'>
+						<CardContent className='flex-1 flex items-center justify-center h-full w-full'>
 							<div className='w-full h-full'>
 								<div
 									onDragEnter={handleDrag}
@@ -178,7 +298,7 @@ export default function Page() {
 									) : (
 										<p className='flex flex-wrap items-center text-gray-500 text-sm md:text-base'>
 											<Download size={20} className='mr-2 shrink-0' />
-											<span className='break-words'>
+											<span className='wrap-break-words'>
 												Faylni bu yerga tashlang yoki
 											</span>
 											<label className='text-blue-600 cursor-pointer ml-1 underline'>
@@ -270,17 +390,35 @@ export default function Page() {
 										})}
 									</div>
 								)}
-
-								<Button
-									onClick={uploadToServer}
-									disabled={!file || uploading}
-									className='mt-5 w-full'
-								>
-									{uploading && (
-										<Loader2 className='animate-spin mr-2' size={16} />
+								<div
+									className={cn(
+										'w-full grid gap-10',
+										file && calculated && 'grid-cols-2'
 									)}
-									{uploading ? 'Yuklanmoqda...' : 'Hisoblash'}
-								</Button>
+								>
+									<Button
+										onClick={uploadToServer}
+										disabled={!file || uploading}
+										className='mt-5 cursor-pointer'
+									>
+										{uploading && (
+											<Loader2 className='animate-spin mr-2' size={16} />
+										)}
+										{uploading ? 'Yuklanmoqda...' : 'Hisoblash'}
+									</Button>
+									{file && resultData && calculated && (
+										<Button
+											onClick={handleSave}
+											disabled={!file || saveLoading}
+											className='mt-5 bg-green-500 hover:bg-green-600 cursor-pointer'
+										>
+											{saveLoading && (
+												<Loader2 className='animate-spin mr-2 ' size={16} />
+											)}
+											{saveLoading ? 'Saqlanmoqda...' : 'Saqlash'}
+										</Button>
+									)}
+								</div>
 
 								{error && (
 									<p className='mt-4 text-red-600 bg-red-50 py-2 rounded-lg text-sm text-center'>
@@ -296,15 +434,15 @@ export default function Page() {
 					initial={{ opacity: 0, x: 30 }}
 					animate={{ opacity: 1, x: 0 }}
 					transition={{ delay: 0.4 }}
-					className='md:col-span-3 flex'
+					className='md:col-span-3 flex flex-col gap-10'
 				>
-					<Card className='flex flex-col flex-1 xl:shadow-lg rounded-2xl shadow-none border-none xl:border border-slate-200 bg-white/90 overflow-auto'>
+					<Card className='flex flex-col gap-3 flex-1 xl:shadow-lg rounded-2xl shadow-none border-none xl:border border-slate-200 bg-white/90  max-h-1/2'>
 						<CardHeader>
 							<CardTitle className='text-2xl font-semibold text-slate-700'>
-								Natijalar
+								Formulaga ko‘ra hisob
 							</CardTitle>
 						</CardHeader>
-						<CardContent className='flex flex-col gap-6 p-6'>
+						<CardContent className='flex flex-col gap-6 px-6'>
 							{resultData && Object.keys(resultData).length > 0 ? (
 								<>
 									{(() => {
@@ -338,10 +476,7 @@ export default function Page() {
 											paymentIntegration
 
 										return (
-											<div className='space-y-3'>
-												<p className='text-slate-700 text-lg font-medium'>
-													<b>Formulaga ko‘ra hisob:</b>
-												</p>
+											<div className='space-y-1'>
 												<div className='bg-slate-100 rounded-lg text-base relative'>
 													<ImageDown
 														size={18}
@@ -360,7 +495,7 @@ export default function Page() {
 																		IS × 48) + (MBH/10 × 8) + (MBJS/2 × 10) × I
 																		<sub>soat</sub> × ir × t
 																	</p>
-																	<ul className='p-5 list-disc'>
+																	<ul className='px-5 list-disc'>
 																		<li>
 																			<b>MK</b> - axborot tizimi yoki resursning
 																			manba kodi
@@ -414,7 +549,7 @@ export default function Page() {
 																</AccordionContent>
 															</AccordionItem>
 														</Accordion>
-														<hr className='my-3' />
+														<hr className='my-1' />
 														<p className='text-lg'>
 															Σ = (({MK}/30 × 10) + ({RS} × 24) + ({MS} × 48) +
 															({IS} × 48) + ({MBH}/10 × 8) + ({MBJS}/2 × 10)) ×{' '}
@@ -439,6 +574,87 @@ export default function Page() {
 									Hozircha ma’lumot yo‘q. Yuklangan fayl asosida natijalar bu
 									yerda chiqadi.
 								</div>
+							)}
+						</CardContent>
+					</Card>
+					<Card className='flex flex-col flex-1 xl:shadow-lg rounded-2xl shadow-none border-none xl:border border-slate-200 bg-white/90 overflow-auto'>
+						<CardHeader>
+							<CardTitle className='text-2xl font-semibold text-slate-700'>
+								Yuklangan fayllar tarixi
+							</CardTitle>
+						</CardHeader>
+						<CardContent className='flex flex-col gap-6 p-6 h-full overflow-y-auto'>
+							{loading ? (
+								<div className='w-full h-full flex items-center justify-center'>
+									<p>Saqlangan fayllar yuklanmoqda...</p>
+								</div>
+							) : files.length > 0 ? (
+								<>
+									<Table>
+										<TableHeader>
+											<TableRow>
+												<TableHead className='w-[100px]'>Fayl nomi</TableHead>
+												<TableHead>Fayl hajmi</TableHead>
+												<TableHead>Sana</TableHead>
+												<TableHead>Natija</TableHead>
+												<TableHead className='text-right'></TableHead>
+											</TableRow>
+										</TableHeader>
+										<TableBody>
+											{files.map(item => (
+												<TableRow key={item._id}>
+													<TableCell className='font-medium w-2/5'>
+														<span className='flex items-center gap-1'>
+															<FileTypeIcon
+																fileName={item.name}
+																className='text-sm md:text-base xl:text-xl shrink-0'
+															/>
+															{item.name}
+														</span>
+													</TableCell>
+													<TableCell>
+														{(item.size / 1024).toFixed(2)} KB
+													</TableCell>
+													<TableCell className='font-medium'>
+														{new Date(item.uploadedAt).toLocaleString('uz-UZ', {
+															timeZone: 'Asia/Tashkent',
+															year: 'numeric',
+															month: '2-digit',
+															day: '2-digit',
+															hour: '2-digit',
+															minute: '2-digit',
+														})}
+													</TableCell>
+													<TableCell>
+														{item.amount.toLocaleString('uz-UZ', {
+															maximumFractionDigits: 2,
+														})}
+													</TableCell>
+													<TableCell className='flex items-center justify-end gap-3'>
+														{deleteLoading === item._id ? (
+															<Loader2
+																color='blue'
+																size={16}
+																className='animate-spin'
+															/>
+														) : (
+															<Trash2
+																size={18}
+																color='red'
+																className='cursor-pointer'
+																onClick={() => handleDelete(item._id)}
+															/>
+														)}
+													</TableCell>
+												</TableRow>
+											))}
+										</TableBody>
+									</Table>
+								</>
+							) : (
+								<p className='w-full text-center text-sm text-muted-foreground'>
+									Hozircha fayl saqlanmagan!
+								</p>
 							)}
 						</CardContent>
 					</Card>
