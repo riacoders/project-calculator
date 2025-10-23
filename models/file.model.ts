@@ -15,7 +15,7 @@ const FileSchema = new Schema<IFile>(
 			type: Date,
 			default: () => {
 				const date = new Date()
-				date.setHours(date.getHours() + 5)
+				date.setHours(date.getHours() )
 				return date
 			},
 		},
