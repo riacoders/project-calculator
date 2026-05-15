@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 // GET /api/files/:id
 export async function GET(
 	request: Request,
-	context: { params: Promise<{ id: string }> } // 👈 YANGI TYPE imzo
+	context: { params: Promise<{ id: string }> },
 ) {
 	try {
 		const { id } = await context.params
@@ -24,7 +24,7 @@ export async function GET(
 // DELETE /api/files/:id
 export async function DELETE(
 	request: Request,
-	context: { params: Promise<{ id: string }> } // 👈 YANGI TYPE imzo
+	context: { params: Promise<{ id: string }> },
 ) {
 	try {
 		const { id } = await context.params
